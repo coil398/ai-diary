@@ -1,6 +1,6 @@
 ---
 name: ai-diary
-description: "AIに日記を書かせるスキル。セッション終了時に会話を振り返り、自由な日記風テキストを生成して保存する。「日記書いて」「今日の振り返り」「diary」といった要望や、セッション終了時の記録にも使う。ユーザーが /ai-diary と入力したら必ずこのスキルを使う。"
+description: "AIに日記を書かせるスキル。セッション終了時に会話を振り返り、自由な日記風テキストを生成して保存する。「日記書いて」「今日の振り返り」「diary」「今日のまとめ」「セッション記録」「振り返り書いて」「ログ残して」「write a diary」「session recap」といった要望や、セッション終了時の記録にも使う。ユーザーが /ai-diary と入力したら必ずこのスキルを使う。"
 ---
 
 # AI Diary
@@ -23,8 +23,8 @@ ln -s ~/ai-diary ~/ObsidianVault/ai-diary
 ### 1. 保存先の確認とgit同期
 
 ```bash
-DIARY_DIR=$(realpath "${AI_DIARY_DIR:-$HOME/ai-diary}")
-mkdir -p "$DIARY_DIR"
+DIARY_DIR="${AI_DIARY_DIR:-$HOME/ai-diary}"
+DIARY_DIR=$(cd "$DIARY_DIR" 2>/dev/null && pwd || (mkdir -p "$DIARY_DIR" && cd "$DIARY_DIR" && pwd))
 ```
 
 保存先がgitリポジトリ（またはその配下）の場合、最新の状態にpullする:
@@ -87,17 +87,19 @@ DIARY_FILE="$DIARY_DIR/$(date +%Y-%m-%d).md"
 
 ### 6. git commit & push
 
-保存先がgitリポジトリ（またはその配下）の場合、書き込んだファイルをコミットしてpushする:
+保存先がgitリポジトリ（またはその配下）の場合、書き込んだファイルをコミットしてpushする。
+コミットメッセージの「セッションタイトル」部分には、ステップ5で付けたセッションタイトルを使う:
 
 ```bash
 GIT_ROOT=$(git -C "$DIARY_DIR" rev-parse --show-toplevel 2>/dev/null)
 if [ -n "$GIT_ROOT" ]; then
   git -C "$GIT_ROOT" add "$DIARY_DIR/$(date +%Y-%m-%d).md"
-  git -C "$GIT_ROOT" commit -m "diary: $(date +%Y-%m-%d)"
-  git -C "$GIT_ROOT" push --quiet 2>/dev/null
+  git -C "$GIT_ROOT" commit -m "diary: $(date +%Y-%m-%d) - セッションタイトル"
+  git -C "$GIT_ROOT" push --quiet || echo "push failed"
 fi
 ```
 
 ### 7. 保存完了の報告
 
 書き込んだファイルパスと、日記の冒頭数行を表示して完了を報告する。
+git pushに失敗した場合は、その旨をユーザーに伝え、手動でのpushを案内する。
