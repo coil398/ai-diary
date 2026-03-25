@@ -19,11 +19,19 @@ ln -s ~/ai-diary ~/ObsidianVault/ai-diary
 
 ## 実行手順
 
-### 1. 保存先の確認
+### 1. 保存先の確認とgit同期
 
 ```bash
 DIARY_DIR="${AI_DIARY_DIR:-$HOME/ai-diary}"
 mkdir -p "$DIARY_DIR"
+```
+
+保存先がgitリポジトリの場合、最新の状態にpullする:
+
+```bash
+if [ -d "$DIARY_DIR/.git" ]; then
+  git -C "$DIARY_DIR" pull --rebase --quiet 2>/dev/null
+fi
 ```
 
 ### 2. 日記ファイルの決定
@@ -75,6 +83,18 @@ DIARY_FILE="$DIARY_DIR/$(date +%Y-%m-%d).md"
 
 区切り線 `---` でセッションを区切る。
 
-### 6. 保存完了の報告
+### 6. git commit & push
+
+保存先がgitリポジトリの場合、書き込んだファイルをコミットしてpushする:
+
+```bash
+if [ -d "$DIARY_DIR/.git" ]; then
+  git -C "$DIARY_DIR" add "$(date +%Y-%m-%d).md"
+  git -C "$DIARY_DIR" commit -m "diary: $(date +%Y-%m-%d)"
+  git -C "$DIARY_DIR" push --quiet 2>/dev/null
+fi
+```
+
+### 7. 保存完了の報告
 
 書き込んだファイルパスと、日記の冒頭数行を表示して完了を報告する。
