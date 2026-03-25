@@ -22,7 +22,7 @@ ln -s ~/ai-diary ~/ObsidianVault/ai-diary
 ### 1. 保存先の確認とgit同期
 
 ```bash
-DIARY_DIR="${AI_DIARY_DIR:-$HOME/ai-diary}"
+DIARY_DIR=$(realpath "${AI_DIARY_DIR:-$HOME/ai-diary}")
 mkdir -p "$DIARY_DIR"
 ```
 
