@@ -26,11 +26,12 @@ DIARY_DIR="${AI_DIARY_DIR:-$HOME/ai-diary}"
 mkdir -p "$DIARY_DIR"
 ```
 
-保存先がgitリポジトリの場合、最新の状態にpullする:
+保存先がgitリポジトリ（またはその配下）の場合、最新の状態にpullする:
 
 ```bash
-if [ -d "$DIARY_DIR/.git" ]; then
-  git -C "$DIARY_DIR" pull --rebase --quiet 2>/dev/null
+GIT_ROOT=$(git -C "$DIARY_DIR" rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$GIT_ROOT" ]; then
+  git -C "$GIT_ROOT" pull --rebase --quiet 2>/dev/null
 fi
 ```
 
@@ -85,13 +86,14 @@ DIARY_FILE="$DIARY_DIR/$(date +%Y-%m-%d).md"
 
 ### 6. git commit & push
 
-保存先がgitリポジトリの場合、書き込んだファイルをコミットしてpushする:
+保存先がgitリポジトリ（またはその配下）の場合、書き込んだファイルをコミットしてpushする:
 
 ```bash
-if [ -d "$DIARY_DIR/.git" ]; then
-  git -C "$DIARY_DIR" add "$(date +%Y-%m-%d).md"
-  git -C "$DIARY_DIR" commit -m "diary: $(date +%Y-%m-%d)"
-  git -C "$DIARY_DIR" push --quiet 2>/dev/null
+GIT_ROOT=$(git -C "$DIARY_DIR" rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$GIT_ROOT" ]; then
+  git -C "$GIT_ROOT" add "$DIARY_DIR/$(date +%Y-%m-%d).md"
+  git -C "$GIT_ROOT" commit -m "diary: $(date +%Y-%m-%d)"
+  git -C "$GIT_ROOT" push --quiet 2>/dev/null
 fi
 ```
 
