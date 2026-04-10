@@ -31,17 +31,84 @@ Claude Code のセッション中に以下のように呼び出す:
 - デフォルト: `~/ai-diary/`
 - 環境変数 `AI_DIARY_DIR` で変更可能
 
-## Obsidian 連携
+初回起動時、`~/ai-diary` が未設定ならスキルは黙ってディレクトリを作らず、どの方法で初期化するかを対話で確認する（後述のセットアップパターン参照）。
 
-保存先ディレクトリを Obsidian Vault 内にシンボリックリンクすれば、Obsidian から日記を閲覧・管理できる:
+## セットアップパターン
+
+以下の3パターンのどれかを選んでセットアップする。
+
+### 1. Standalone（シンプル、git 同期なし）
 
 ```bash
-ln -s ~/ai-diary ~/ObsidianVault/ai-diary
+mkdir -p ~/ai-diary
 ```
+
+日記はローカルディレクトリに保存されるだけ。バックアップは自分で取る必要がある。
+
+### 2. 既存 git リポジトリ連携（推奨）
+
+dotfiles、メモ用 repo、Obsidian Vault など、自分が普段から同期している git リポジトリの中に `ai-diary/` サブディレクトリを作り、そこを `~/ai-diary` のリンク先にする:
+
+```bash
+REPO=~/dotfiles        # お好みの git リポジトリ
+mkdir -p "$REPO/ai-diary"
+ln -s "$REPO/ai-diary" ~/ai-diary
+```
+
+これでスキルは `~/ai-diary/YYYY-MM-DD.md` に書き込むが、実体は `$REPO/ai-diary/` にあり、スキルが自動で `git pull` / `commit` / `push` を回してくれる。
+
+### 3. Obsidian Vault 連携
+
+上記の特殊ケース。Vault が git 管理されていれば、そのまま連携が効く:
+
+```bash
+VAULT=~/ObsidianVault
+mkdir -p "$VAULT/ai-diary"
+ln -s "$VAULT/ai-diary" ~/ai-diary
+```
+
+Obsidian 側で `ai-diary/` フォルダが普通のノート群として閲覧できるようになる。
+
+### シンボリックリンクの向きに注意
+
+パターン 2 と 3 では必ず「実体はリポジトリ内、`~/ai-diary` がそこへのリンク」という向きにすること。
+
+```bash
+# 正しい
+ln -s <repo>/ai-diary ~/ai-diary
+
+# 間違い（git が中身のファイルを追跡できず、自動同期が機能しない）
+ln -s ~/ai-diary <repo>/ai-diary
+```
+
+古いバージョンのドキュメントは逆向きで案内していたが、実際に試すと「git がリンクそのものだけを追跡し、日記ファイルはリポジトリに入らない」という罠にはまる。過去の事故に基づく修正なので気をつけてほしい。
 
 ## Git 同期
 
-保存先が git リポジトリ内にある場合、日記の書き込み前に `pull`、書き込み後に `commit` & `push` を自動で行う。
+保存先の実体（シンボリックリンクならリンク先）が git リポジトリの作業ツリー内にある場合、日記の書き込み前に `pull`、書き込み後に `commit` & `push` を自動で行う。保存先が git の管轄外にある場合は同期をスキップしてそのまま書き込む。
+
+## トラブルシュート
+
+### 日記ファイルが消えた
+
+git 管理されている日記ファイルが、vault backup の自動コミットや手動マージで history から落ちる事故が起きることがある。典型例: 別ブランチで diary を追加し、main 側にその追加がないままマージされて片側優先でファイルが落ちるケース。
+
+復旧手順:
+
+```bash
+cd <repo>
+
+# ai-diary に関する全 commit を all branches から探す
+git log --all --oneline -- 'ai-diary/*'
+
+# 任意の commit から復元
+git show <commit-hash>:ai-diary/YYYY-MM-DD.md > ai-diary/YYYY-MM-DD.md
+git add ai-diary/YYYY-MM-DD.md
+git commit -m "restore: ai-diary/YYYY-MM-DD.md"
+git push
+```
+
+消失に気付かないまま時間が経つと reflog からも探せなくなるので、重要な日記を書いた翌日などには `git log --all -- ai-diary/` で履歴を確認すると安全。
 
 ## 出力フォーマット
 
